@@ -125,8 +125,13 @@ export function DELETE<T = undefined>(url: string, data = {}, config: ConfigType
   return request(url, data, config, 'DELETE');
 }
 
-export const plusRequest = (config: AxiosRequestConfig) =>
-  instance.request({
+export const plusRequest = (config: AxiosRequestConfig) => {
+  if (!FastGPTProUrl) {
+    console.log('未部署商业版接口', config.url);
+    return Promise.reject(new UserError('The request was denied. PRO_URL is not configured.'));
+  }
+  return instance.request({
     ...config,
     baseURL: FastGPTProUrl
   });
+};

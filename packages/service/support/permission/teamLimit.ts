@@ -10,62 +10,18 @@ import { TeamMemberStatusEnum } from '@fastgpt/global/support/user/team/constant
 import { getVectorCountByTeamId } from '../../common/vectorDB/controller';
 
 export const checkTeamAIPoints = async (teamId: string) => {
-  if (!global.subPlans?.standard) return;
-
-  const { totalPoints, usedPoints } = await getTeamPoints({ teamId });
-
-  if (usedPoints >= totalPoints) {
-    return Promise.reject(TeamErrEnum.aiPointsNotEnough);
-  }
-
-  return {
-    totalPoints,
-    usedPoints
-  };
+  // 取消AI点数检查，始终通过验证
+  return Promise.resolve();
 };
 
 export const checkTeamMemberLimit = async (teamId: string, newCount: number) => {
-  const [{ standardConstants }, memberCount] = await Promise.all([
-    getTeamStandPlan({
-      teamId
-    }),
-    MongoTeamMember.countDocuments({
-      teamId,
-      status: { $ne: TeamMemberStatusEnum.leave }
-    })
-  ]);
-
-  if (standardConstants && newCount + memberCount > standardConstants.maxTeamMember) {
-    return Promise.reject(TeamErrEnum.teamOverSize);
-  }
+  // 取消团队成员数量限制检查，直接通过
+  return;
 };
 
 export const checkTeamAppLimit = async (teamId: string, amount = 1) => {
-  const [{ standardConstants }, appCount] = await Promise.all([
-    getTeamStandPlan({ teamId }),
-    MongoApp.countDocuments({
-      teamId,
-      type: {
-        $in: [AppTypeEnum.simple, AppTypeEnum.workflow, AppTypeEnum.plugin, AppTypeEnum.toolSet]
-      }
-    })
-  ]);
-
-  if (standardConstants && appCount + amount >= standardConstants.maxAppAmount) {
-    return Promise.reject(TeamErrEnum.appAmountNotEnough);
-  }
-
-  // System check
-  if (global?.licenseData?.maxApps && typeof global?.licenseData?.maxApps === 'number') {
-    const totalApps = await MongoApp.countDocuments({
-      type: {
-        $in: [AppTypeEnum.simple, AppTypeEnum.workflow, AppTypeEnum.plugin, AppTypeEnum.toolSet]
-      }
-    });
-    if (totalApps >= global.licenseData.maxApps) {
-      return Promise.reject(SystemErrEnum.licenseAppAmountLimit);
-    }
-  }
+  // 取消应用数量限制检查，直接通过
+  return;
 };
 
 export const checkDatasetIndexLimit = async ({
@@ -75,52 +31,16 @@ export const checkDatasetIndexLimit = async ({
   teamId: string;
   insertLen?: number;
 }) => {
-  const [{ standardConstants, totalPoints, usedPoints, datasetMaxSize }, usedDatasetIndexSize] =
-    await Promise.all([getTeamPlanStatus({ teamId }), getVectorCountByTeamId(teamId)]);
-
-  if (!standardConstants) return;
-
-  if (usedDatasetIndexSize + insertLen >= datasetMaxSize) {
-    return Promise.reject(TeamErrEnum.datasetSizeNotEnough);
-  }
-
-  if (usedPoints >= totalPoints) {
-    return Promise.reject(TeamErrEnum.aiPointsNotEnough);
-  }
+  // 取消数据集索引大小限制检查，直接通过
   return;
 };
 
 export const checkTeamDatasetLimit = async (teamId: string) => {
-  const [{ standardConstants }, datasetCount] = await Promise.all([
-    getTeamStandPlan({ teamId }),
-    MongoDataset.countDocuments({
-      teamId,
-      type: { $ne: DatasetTypeEnum.folder }
-    })
-  ]);
-
-  // User check
-  if (standardConstants && datasetCount >= standardConstants.maxDatasetAmount) {
-    return Promise.reject(TeamErrEnum.datasetAmountNotEnough);
-  }
-
-  // System check
-  if (global?.licenseData?.maxDatasets && typeof global?.licenseData?.maxDatasets === 'number') {
-    const totalDatasets = await MongoDataset.countDocuments({
-      type: { $ne: DatasetTypeEnum.folder }
-    });
-    if (totalDatasets >= global.licenseData.maxDatasets) {
-      return Promise.reject(SystemErrEnum.licenseDatasetAmountLimit);
-    }
-  }
+  // 取消知识库数量限制检查，直接通过
+  return;
 };
 
 export const checkTeamDatasetSyncPermission = async (teamId: string) => {
-  const { standardConstants } = await getTeamStandPlan({
-    teamId
-  });
-
-  if (standardConstants && !standardConstants?.permissionWebsiteSync) {
-    return Promise.reject(TeamErrEnum.websiteSyncNotEnough);
-  }
+  // 取消网站同步权限检查，直接通过
+  return;
 };

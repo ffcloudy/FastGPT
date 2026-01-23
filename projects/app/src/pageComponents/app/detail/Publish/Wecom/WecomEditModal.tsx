@@ -34,12 +34,26 @@ const WecomEditModal = ({
     register,
     setValue,
     handleSubmit: submitShareChat
-  } = useForm({
+  } = useForm<OutLinkEditType<WecomAppType>>({
     defaultValues: defaultData
   });
 
+  const normalizePayload = (data: OutLinkEditType<WecomAppType>): OutLinkEditType<WecomAppType> => {
+    if (!data.app) return data;
+    return {
+      ...data,
+      app: {
+        CorpId: data.app.CorpId?.trim() || '',
+        AgentId: data.app.AgentId?.trim() || '',
+        SuiteSecret: data.app.SuiteSecret?.trim() || '',
+        CallbackToken: data.app.CallbackToken?.trim() || '',
+        CallbackEncodingAesKey: data.app.CallbackEncodingAesKey?.trim() || ''
+      }
+    };
+  };
+
   const { runAsync: onclickCreate, loading: creating } = useRequest2(
-    (e) =>
+    (e: OutLinkEditType<WecomAppType>) =>
       createShareChat({
         ...e,
         appId,
@@ -52,11 +66,14 @@ const WecomEditModal = ({
     }
   );
 
-  const { runAsync: onclickUpdate, loading: updating } = useRequest2((e) => updateShareChat(e), {
-    errorToast: t('common:update_failed'),
-    successToast: t('common:update_success'),
-    onSuccess: onEdit
-  });
+  const { runAsync: onclickUpdate, loading: updating } = useRequest2(
+    (e: OutLinkEditType<WecomAppType>) => updateShareChat(e),
+    {
+      errorToast: t('common:update_failed'),
+      successToast: t('common:update_success'),
+      onSuccess: onEdit
+    }
+  );
 
   const { feConfigs } = useSystemStore();
 
@@ -138,7 +155,9 @@ const WecomEditModal = ({
             </FormLabel>
             <Input
               placeholder="AES Key"
-              {...(register('app.CallbackEncodingAesKey'), { required: true })}
+              {...register('app.CallbackEncodingAesKey', {
+                required: true
+              })}
             />
           </Flex>
 
@@ -150,8 +169,10 @@ const WecomEditModal = ({
             </Button>
             <Button
               isLoading={creating || updating}
-              onClick={submitShareChat((data) =>
-                isEdit ? onclickUpdate(data) : onclickCreate(data)
+              onClick={submitShareChat((data: OutLinkEditType<WecomAppType>) =>
+                isEdit
+                  ? onclickUpdate(normalizePayload(data))
+                  : onclickCreate(normalizePayload(data))
               )}
             >
               {t('common:Confirm')}

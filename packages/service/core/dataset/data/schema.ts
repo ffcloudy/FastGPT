@@ -102,6 +102,8 @@ try {
   });
   // Recall vectors after data matching
   DatasetDataSchema.index({ teamId: 1, datasetId: 1, collectionId: 1, 'indexes.dataId': 1 });
+
+  DatasetDataSchema.index({ 'indexes.dataId': 1, teamId: 1, collectionId: 1 });
   // rebuild data
   DatasetDataSchema.index({ rebuilding: 1, teamId: 1, datasetId: 1 });
 
@@ -110,6 +112,14 @@ try {
 
   // Cron clear invalid data
   DatasetDataSchema.index({ updateTime: 1 });
+
+  DatasetDataSchema.index({ teamId: 1 });
+
+  DatasetDataSchema.index({ datasetId: 1 });
+
+  DatasetDataSchema.index({ collectionId: 1 });
+
+  DatasetDataSchema.index({ q: 'text' });
 } catch (error) {
   console.log(error);
 }

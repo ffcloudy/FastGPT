@@ -1,5 +1,7 @@
 import { MongoOutLink } from '@fastgpt/service/support/outLink/schema';
 import type { OutLinkEditType } from '@fastgpt/global/support/outLink/type.d';
+import type { WecomAppType } from '@fastgpt/global/support/outLink/type';
+import { PublishChannelEnum } from '@fastgpt/global/support/outLink/constant';
 import { authOutLinkCrud } from '@fastgpt/service/support/permission/publish/authLink';
 import { ManagePermissionVal } from '@fastgpt/global/support/permission/constant';
 import type { ApiRequestProps } from '@fastgpt/service/type/next';
@@ -44,15 +46,47 @@ async function handler(
     per: ManagePermissionVal
   });
 
-  await MongoOutLink.findByIdAndUpdate(_id, {
-    name,
-    responseDetail,
-    showRawSource,
-    showNodeStatus,
-    // showFullText,
-    limit,
-    app
-  });
+  const normalizeWecomApp = (data?: WecomAppType) => {
+    if (!data) return data;
+    const cleaned: WecomAppType = {
+      ...data,
+      CorpId: data.CorpId?.trim(),
+      AgentId: data.AgentId?.trim(),
+      SuiteSecret: data.SuiteSecret?.trim(),
+      CallbackToken: data.CallbackToken?.trim(),
+      CallbackEncodingAesKey: data.CallbackEncodingAesKey?.trim()
+    };
+    if (!cleaned.CallbackEncodingAesKey) {
+      throw new Error('Missing wecom config: CallbackEncodingAesKey');
+    }
+    return cleaned;
+  };
+
+  const payload =
+    outLink.type === PublishChannelEnum.wecom
+      ? (() => {
+          if (!app) {
+            throw new Error('Missing wecom config: app');
+          }
+          return {
+            name,
+            responseDetail,
+            showRawSource,
+            showNodeStatus,
+            limit,
+            app: normalizeWecomApp(app)
+          };
+        })()
+      : {
+          name,
+          responseDetail,
+          showRawSource,
+          showNodeStatus,
+          limit,
+          app
+        };
+
+  await MongoOutLink.findByIdAndUpdate(_id, payload);
 
   (async () => {
     addAuditLog({

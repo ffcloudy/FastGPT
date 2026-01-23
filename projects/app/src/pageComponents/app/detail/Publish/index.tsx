@@ -17,7 +17,7 @@ const Link = dynamic(() => import('./Link'));
 const API = dynamic(() => import('./API'));
 const FeiShu = dynamic(() => import('./FeiShu'));
 const DingTalk = dynamic(() => import('./DingTalk'));
-// const Wecom = dynamic(() => import('./Wecom'));
+const Wecom = dynamic(() => import('./Wecom'));
 const OffiAccount = dynamic(() => import('./OffiAccount'));
 
 const OutLink = () => {
@@ -60,17 +60,17 @@ const OutLink = () => {
             title: t('publish:dingtalk.bot'),
             desc: t('publish:dingtalk.bot_desc'),
             value: PublishChannelEnum.dingtalk,
-            isProFn: true
+            isProFn: false
           }
         ]
       : []),
-    // {
-    //   icon: 'core/app/publish/wecom',
-    //   title: t('publish:wecom.bot'),
-    //   desc: t('publish:wecom.bot_desc'),
-    //   value: PublishChannelEnum.wecom,
-    //   isProFn: true
-    // },
+    {
+      icon: 'core/app/publish/wecom',
+      title: t('publish:wecom.bot'),
+      desc: t('publish:wecom.bot_desc'),
+      value: PublishChannelEnum.wecom,
+      isProFn: false
+    },
     ...(feConfigs?.show_publish_offiaccount !== false
       ? [
           {
@@ -78,7 +78,7 @@ const OutLink = () => {
             title: t('publish:official_account.name'),
             desc: t('publish:official_account.desc'),
             value: PublishChannelEnum.officialAccount,
-            isProFn: true
+            isProFn: false
           }
         ]
       : [])
@@ -107,15 +107,7 @@ const OutLink = () => {
           list={publishList.current}
           value={linkType}
           onChange={(e) => {
-            const config = publishList.current.find((v) => v.value === e)!;
-            if (!feConfigs.isPlus && config.isProFn) {
-              toast({
-                status: 'warning',
-                title: t('common:commercial_function_tip')
-              });
-            } else {
-              setLinkType(e as PublishChannelEnum);
-            }
+            setLinkType(e as PublishChannelEnum);
           }}
         />
       </Box>
@@ -135,7 +127,7 @@ const OutLink = () => {
         {linkType === PublishChannelEnum.apikey && <API appId={appId} />}
         {linkType === PublishChannelEnum.feishu && <FeiShu appId={appId} />}
         {linkType === PublishChannelEnum.dingtalk && <DingTalk appId={appId} />}
-        {/* {linkType === PublishChannelEnum.wecom && <Wecom appId={appId} />} */}
+        {linkType === PublishChannelEnum.wecom && <Wecom appId={appId} />}
         {linkType === PublishChannelEnum.officialAccount && <OffiAccount appId={appId} />}
       </Flex>
     </Box>

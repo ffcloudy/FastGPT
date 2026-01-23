@@ -166,7 +166,7 @@ const LogChart = ({
       });
     },
     {
-      manual: !feConfigs?.isPlus,
+      manual: false,
       refreshDeps: [
         appId,
         dateRange.from,
@@ -181,8 +181,6 @@ const LogChart = ({
   );
 
   const formatChartData = useMemo(() => {
-    if (!feConfigs?.isPlus) return fakeChartData;
-
     const formatTimestamp = (timestamp: number, timespan: AppLogTimespanEnum) => {
       return timespan === AppLogTimespanEnum.week
         ? formatWeekDate(new Date(timestamp))
@@ -405,7 +403,7 @@ const LogChart = ({
                         {t('app:logs_total')}: {formatChartData.cumulative.userCount}
                       </Flex>
                     }
-                    blur={!feConfigs?.isPlus}
+                    blur={false}
                   />
                 </Box>
                 <Box {...chartBoxStyles}>
@@ -450,7 +448,7 @@ const LogChart = ({
                         }}
                       />
                     }
-                    blur={!feConfigs?.isPlus}
+                    blur={false}
                   />
                 </Box>
                 <Box {...chartBoxStyles}>
@@ -479,7 +477,7 @@ const LogChart = ({
                         {t('app:logs_total')}: {formatChartData.cumulative.points.toFixed(2)}
                       </Flex>
                     }
-                    blur={!feConfigs?.isPlus}
+                    blur={false}
                   />
                 </Box>
                 <Box {...chartBoxStyles}>
@@ -498,7 +496,7 @@ const LogChart = ({
                       color: value.color,
                       customValue: (data) => data.sourceCountMap[key as ChatSourceEnum]
                     }))}
-                    blur={!feConfigs?.isPlus}
+                    blur={false}
                   />
                 </Box>
               </Grid>
@@ -559,7 +557,7 @@ const LogChart = ({
                         {t('app:logs_total')}: {formatChartData.cumulative.chatItemCount}
                       </Flex>
                     }
-                    blur={!feConfigs?.isPlus}
+                    blur={false}
                   />
                 </Box>
                 <Box {...chartBoxStyles}>
@@ -588,7 +586,7 @@ const LogChart = ({
                         {t('app:logs_total')}: {formatChartData.cumulative.chatCount}
                       </Flex>
                     }
-                    blur={!feConfigs?.isPlus}
+                    blur={false}
                   />
                 </Box>
                 <Box {...chartBoxStyles}>
@@ -619,7 +617,7 @@ const LogChart = ({
                         })}
                       </Flex>
                     }
-                    blur={!feConfigs?.isPlus}
+                    blur={false}
                   />
                 </Box>
                 <Box {...chartBoxStyles}>
@@ -646,7 +644,7 @@ const LogChart = ({
                         {`${t('app:logs_total_avg_points')}: ${formatChartData.cumulative.pointsPerChat.toFixed(2)}`}
                       </Flex>
                     }
-                    blur={!feConfigs?.isPlus}
+                    blur={false}
                   />
                 </Box>
               </Grid>
@@ -720,7 +718,7 @@ const LogChart = ({
                         })}
                       </Flex>
                     }
-                    blur={!feConfigs?.isPlus}
+                    blur={false}
                   />
                 </Box>
                 <Box {...chartBoxStyles}>
@@ -747,7 +745,7 @@ const LogChart = ({
                         {`${t('app:logs_total_avg_duration')}: ${formatChartData.cumulative.avgDuration.toFixed(2)}s`}
                       </Flex>
                     }
-                    blur={!feConfigs?.isPlus}
+                    blur={false}
                   />
                 </Box>
               </Grid>
@@ -833,28 +831,21 @@ const HeaderControl = ({
 
 const TotalData = ({ appId }: { appId: string }) => {
   const { t } = useTranslation();
-  const { feConfigs } = useSystemStore();
 
   const {
     data: totalData = {
       totalUsers: 0,
       totalChats: 0,
-      totalPoints: 0
+      totalPoints: 0,
+      totalMessages: 0
     }
   } = useRequest2(
     async () => {
-      if (feConfigs?.isPlus) {
-        return await getAppTotalData({ appId });
-      }
-      return {
-        totalUsers: 455,
-        totalChats: 22112,
-        totalPoints: 112233
-      };
+      return await getAppTotalData({ appId });
     },
     {
       manual: false,
-      refreshDeps: [appId, feConfigs?.isPlus]
+      refreshDeps: [appId]
     }
   );
 
@@ -878,7 +869,7 @@ const TotalData = ({ appId }: { appId: string }) => {
           border: 'green.200',
           bg: 'green.50'
         },
-        value: totalData.totalChats
+        value: totalData.totalMessages
       },
       {
         label: t('app:logs_total_points'),
@@ -891,7 +882,13 @@ const TotalData = ({ appId }: { appId: string }) => {
         value: totalData.totalPoints
       }
     ];
-  }, [t, totalData.totalChats, totalData.totalPoints, totalData.totalUsers]);
+  }, [
+    t,
+    totalData.totalChats,
+    totalData.totalPoints,
+    totalData.totalUsers,
+    totalData.totalMessages
+  ]);
 
   return (
     <>
@@ -912,12 +909,7 @@ const TotalData = ({ appId }: { appId: string }) => {
               <Box fontSize={'sm'} color={'myGray.500'} mb={1}>
                 {item.label}
               </Box>
-              <Box
-                fontSize={'28px'}
-                fontWeight={'medium'}
-                color={'myGray.900'}
-                filter={feConfigs?.isPlus ? 'none' : 'blur(7.5px)'}
-              >
+              <Box fontSize={'28px'} fontWeight={'medium'} color={'myGray.900'} filter={'none'}>
                 {item.value.toLocaleString()}
               </Box>
             </Flex>

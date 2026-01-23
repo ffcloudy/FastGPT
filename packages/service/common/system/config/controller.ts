@@ -10,7 +10,8 @@ export const getFastGPTConfigFromDB = async (): Promise<{
 }> => {
   if (!FastGPTProUrl) {
     return {
-      fastgptConfig: {} as FastGPTConfigFileType
+      fastgptConfig: {} as FastGPTConfigFileType,
+      licenseData: undefined
     };
   }
 

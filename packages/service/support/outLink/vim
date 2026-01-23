@@ -1,0 +1,167 @@
+import axios from 'axios';
+import crypto from 'crypto';
+import type { DingtalkAppType, OutLinkSchema } from '@fastgpt/global/support/outLink/type';
+import { MongoOutLink } from '../schema';
+import { addLog } from '../../../common/system/log';
+
+/**
+ * 验证钉钉请求签名
+ */
+export function verifyDingtalkSignature(
+  timestamp: string,
+  secret: string,
+  sign: string
+): boolean {
+  try {
+    const stringToSign = `${timestamp}\n${secret}`;
+    const hmac = crypto.createHmac('sha256', secret);
+    const signData = hmac.update(stringToSign).digest('base64');
+    
+    return signData === sign;
+  } catch (error) {
+    addLog.error('Verify dingtalk signature error', error);
+    return false;
+  }
+}
+
+/**
+ * 获取钉钉访问令牌
+ */
+async function getDingtalkAccessToken(clientId: string, clientSecret: string): Promise<string> {
+  try {
+    const response = await axios.post(
+      'https://api.dingtalk.com/v1.0/oauth2/accessToken',
+      {
+        appKey: clientId,
+        appSecret: clientSecret
+      }
+    );
+
+    if (response.data.accessToken) {
+      return response.data.accessToken;
+    }
+
+    throw new Error('Get dingtalk access token failed');
+  } catch (error) {
+    addLog.error('Get dingtalk access token error', error);
+    throw error;
+  }
+}
+
+/**
+ * 发送钉钉消息
+ */
+async function sendDingtalkMessage(
+  accessToken: string,
+  conversationId: string,
+  content: string
+): Promise<void> {
+  try {
+    await axios.post(
+      'https://api.dingtalk.com/v1.0/robot/oToMessages/batchSend',
+      {
+        msgKey: 'sampleText',
+        msgParam: JSON.stringify({ content }),
+        robotCode: conversationId
+      },
+      {
+        headers: {
+          'x-acs-dingtalk-access-token': accessToken,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+  } catch (error) {
+    addLog.error('Send dingtalk message error', error);
+    throw error;
+  }
+}
+
+interface DingtalkMessage {
+  conversationId?: string;
+  chatbotUserId?: string;
+  msgId?: string;
+  createAt?: number;
+  conversationType?: string;
+  senderId?: string;
+  senderNick?: string;
+  text?: {
+    content: string;
+  };
+  msgtype?: string;
+}
+
+/**
+ * 处理钉钉事件
+ */
+export async function handleDingtalkEvent(
+  shareId: string,
+  body: DingtalkMessage,
+  headers: Record<string, string>
+): Promise<any> {
+  // 获取 outLink 配置
+  const outLink = await MongoOutLink.findOne({ shareId }).lean<OutLinkSchema<DingtalkAppType>>();
+  if (!outLink || !outLink.app) {
+    throw new Error('OutLink not found or not configured');
+  }
+
+  const { clientId, clientSecret } = outLink.app;
+
+  // 验证签名
+  const timestamp = headers['timestamp'] || '';
+  const sign = headers['sign'] || '';
+
+  if (timestamp && sign && clientSecret) {
+    if (!verifyDingtalkSignature(timestamp, clientSecret, sign)) {
+      throw new Error('Invalid signature');
+    }
+  }
+
+  // 处理文本消息
+  if (body.msgtype === 'text' && body.text?.content) {
+    const userMessage = body.text.content.trim();
+    const conversationId = body.conversationId || '';
+    const senderId = body.senderId || '';
+
+    if (!userMessage) {
+      return { success: true };
+    }
+
+    // 发送即时响应（如果配置了）
+    if (outLink.immediateResponse) {
+      const accessToken = await getDingtalkAccessToken(clientId, clientSecret);
+      await sendDingtalkMessage(accessToken, conversationId, outLink.immediateResponse);
+    }
+
+    return {
+      success: true,
+      needProcess: true,
+      messageInfo: {
+        userMessage,
+        conversationId,
+        senderId,
+        msgId: body.msgId
+      }
+    };
+  }
+
+  return { success: true };
+}
+
+/**
+ * 发送钉钉响应消息
+ */
+export async function sendDingtalkResponse(
+  outLink: OutLinkSchema<DingtalkAppType>,
+  conversationId: string,
+  response: string
+): Promise<void> {
+  if (!outLink.app) {
+    throw new Error('Dingtalk app not configured');
+  }
+
+  const { clientId, clientSecret } = outLink.app;
+  const accessToken = await getDingtalkAccessToken(clientId, clientSecret);
+  await sendDingtalkMessage(accessToken, conversationId, response);
+}
+

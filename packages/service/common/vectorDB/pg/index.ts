@@ -157,13 +157,14 @@ export class PgVectorCtrl {
 
     const results: any = await PgClient.query(
       `BEGIN;
-          SET LOCAL hnsw.ef_search = ${global.systemEnv?.hnswEfSearch || 100};
+          SET LOCAL hnsw.ef_search = ${global.systemEnv?.hnswEfSearch || 150};
           SET LOCAL hnsw.max_scan_tuples = ${global.systemEnv?.hnswMaxScanTuples || 100000};
           SET LOCAL hnsw.iterative_scan = relaxed_order;
           WITH relaxed_results AS MATERIALIZED (
             select id, collection_id, vector <#> '[${vector}]' AS score
               from ${DatasetVectorTableName}
-              where dataset_id IN (${datasetIds.map((id) => `'${String(id)}'`).join(',')})
+                 where team_id='${String(teamId)}'
+                AND dataset_id IN (${datasetIds.map((id) => `'${String(id)}'`).join(',')})
                 ${filterCollectionIdSql}
                 ${forbidCollectionSql}
               order by score limit ${limit}

@@ -26,4 +26,5 @@ export type getTotalDataResponse = {
   totalUsers: number;
   totalChats: number;
   totalPoints: number;
+  totalMessages: number;
 };
